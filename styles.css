@@ -1,0 +1,456 @@
+/* 高端艺术圣诞祝福页面 - 诺贝尔奖级设计 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Irish Grover 字体 */
+body {
+    font-family: 'Irish Grover', cursive;
+    background: #F9F8F4;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* 3D背景画布 */
+.bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* 主容器 */
+.container {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+/* Hero区域 */
+.hero-section {
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 抽象艺术圣诞树SVG */
+.tree-svg {
+    width: 100%;
+    height: auto;
+    max-height: 75vh;
+    filter: drop-shadow(0 20px 40px rgba(197, 160, 89, 0.15));
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tree-svg:hover {
+    filter: drop-shadow(0 25px 50px rgba(197, 160, 89, 0.25));
+    transform: scale(1.02);
+}
+
+/* 树内容过渡效果 */
+#tree-content {
+    transition: opacity 0.4s ease-in-out;
+}
+
+.tree-variation {
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* 金箔曲线动画 */
+.gold-curve {
+    animation: goldShimmer 4s ease-in-out infinite;
+}
+
+.main-curve {
+    animation: curveFloat 6s ease-in-out infinite;
+}
+
+.side-curve.left {
+    animation: curveFloat 7s ease-in-out infinite;
+    animation-delay: -1s;
+}
+
+.side-curve.right {
+    animation: curveFloat 7s ease-in-out infinite;
+    animation-delay: -2s;
+}
+
+@keyframes goldShimmer {
+    0%, 100% { 
+        filter: brightness(1);
+    }
+    50% { 
+        filter: brightness(1.15);
+    }
+}
+
+@keyframes curveFloat {
+    0%, 100% { 
+        transform: translateY(0);
+    }
+    50% { 
+        transform: translateY(-3px);
+    }
+}
+
+/* 有机形状动画 */
+.organic-shape {
+    animation: shapeBreath 5s ease-in-out infinite;
+}
+
+.green-shape {
+    animation-delay: -1s;
+}
+
+.red-shape {
+    animation: shapeGlow 3s ease-in-out infinite;
+}
+
+@keyframes shapeBreath {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+@keyframes shapeGlow {
+    0%, 100% { 
+        filter: brightness(1) drop-shadow(0 0 5px rgba(220, 38, 38, 0.3));
+    }
+    50% { 
+        filter: brightness(1.2) drop-shadow(0 0 15px rgba(220, 38, 38, 0.5));
+    }
+}
+
+/* 金色装饰点 */
+.gold-dot {
+    animation: dotTwinkle 2s ease-in-out infinite;
+}
+
+@keyframes dotTwinkle {
+    0%, 100% { 
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* 树顶星星 */
+.tree-star {
+    animation: starSparkle 3s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes starSparkle {
+    0%, 100% { 
+        filter: brightness(1) drop-shadow(0 0 10px rgba(197, 160, 89, 0.5));
+        transform: scale(1) rotate(0deg);
+    }
+    50% { 
+        filter: brightness(1.3) drop-shadow(0 0 20px rgba(197, 160, 89, 0.8));
+        transform: scale(1.1) rotate(5deg);
+    }
+}
+
+/* 祝福文字区域 - 靠近树 */
+.blessing-section {
+    text-align: center;
+    margin-top: 0.5rem;
+    animation: textReveal 1.2s ease-out forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+}
+
+@keyframes textReveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 两行文字一样大，使用Irish Grover */
+.main-message {
+    font-family: 'Irish Grover', cursive;
+    font-size: 2.8rem;
+    font-weight: 400;
+    color: #C5A059;
+    margin-bottom: 0.3rem;
+    letter-spacing: 2px;
+}
+
+/* 主标题 - 同样大小 */
+.christmas-message {
+    font-family: 'Irish Grover', cursive;
+    font-size: 2.8rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: #C5A059;
+}
+
+/* 动态粒子容器 */
+.particle-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 4;
+    overflow: hidden;
+}
+
+/* 粒子样式 */
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* 全屏下雪效果 */
+.snow-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    overflow: hidden;
+}
+
+/* 六角形雪花 */
+.snowflake-hex {
+    position: absolute;
+    top: -50px;
+    animation: snowfallHex linear infinite;
+}
+
+@keyframes snowfallHex {
+    0% {
+        transform: translateY(-50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 圆点雪花 */
+.snowflake-dot {
+    position: absolute;
+    top: -10px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: snowfallDot linear infinite;
+}
+
+@keyframes snowfallDot {
+    0% {
+        transform: translateY(-10px) translateX(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(100vh) translateX(20px);
+        opacity: 0;
+    }
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1400px) {
+    .hero-section {
+        max-width: 1000px;
+    }
+    
+    .tree-svg {
+        max-height: 80vh;
+    }
+    
+    .christmas-message {
+        font-size: 3.5rem;
+        letter-spacing: 3px;
+    }
+    
+    .main-message {
+        font-size: 3.5rem;
+        letter-spacing: 3px;
+    }
+}
+
+@media (min-width: 1800px) {
+    .hero-section {
+        max-width: 1200px;
+    }
+    
+    .tree-svg {
+        max-height: 85vh;
+    }
+    
+    .christmas-message {
+        font-size: 4rem;
+        letter-spacing: 4px;
+    }
+    
+    .main-message {
+        font-size: 4rem;
+        letter-spacing: 4px;
+    }
+}
+
+/* 平板响应式 */
+@media (max-width: 1024px) {
+    .container {
+        padding: 1.5rem;
+    }
+    
+    .hero-section {
+        max-width: 600px;
+    }
+    
+    .tree-svg {
+        max-height: 60vh;
+    }
+    
+    .christmas-message {
+        font-size: 2.5rem;
+        letter-spacing: 2px;
+    }
+    
+    .main-message {
+        font-size: 2.5rem;
+        letter-spacing: 2px;
+    }
+}
+
+/* 手机响应式 */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .hero-section {
+        max-width: 100%;
+    }
+    
+    .tree-svg {
+        max-height: 55vh;
+    }
+    
+    .blessing-section {
+        margin-top: 0.5rem;
+    }
+    
+    .christmas-message {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+    
+    .main-message {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0.5rem;
+    }
+    
+    .tree-svg {
+        max-height: 50vh;
+    }
+    
+    .blessing-section {
+        margin-top: 0.3rem;
+    }
+    
+    .christmas-message {
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+    }
+    
+    .main-message {
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+    }
+}
+
+/* 性能优化 */
+.tree-svg,
+.gold-curve,
+.organic-shape,
+.tree-star,
+.snowflake-hex,
+.snowflake-dot {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+/* 减少动画对性能影响 */
+@media (prefers-reduced-motion: reduce) {
+    .gold-curve,
+    .organic-shape,
+    .tree-star,
+    .gold-dot,
+    .snowflake-hex,
+    .snowflake-dot {
+        animation: none;
+    }
+    
+    .christmas-message {
+        animation: none;
+        background-position: 50% 50%;
+    }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a1a1a;
+    }
+    
+    .main-message {
+        color: #e5e5e5;
+    }
+}
