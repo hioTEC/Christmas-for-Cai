@@ -1,2 +1,5 @@
 name = "christmas-for-cai"
 compatibility_date = "2024-12-25"
+
+# Cloudflare Pages 静态资源配置
+pages_build_output_dir = "."
