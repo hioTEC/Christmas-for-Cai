@@ -1,0 +1,23 @@
+# Cloudflare Pages 部署时忽略这些文件
+
+# Node modules
+node_modules/
+
+# Wrangler
+.wrangler/
+
+# Claude Code
+.claude/
+
+# Git
+.git/
+.gitignore
+
+# Config files
+package.json
+package-lock.json
+wrangler.toml
+
+# System files
+.DS_Store
+Thumbs.db
