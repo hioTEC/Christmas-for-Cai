@@ -1,3 +1,0 @@
-# Cloudflare Pages 静态站点配置
-# 此文件确保所有路由都返回 index.html（单页应用支持）
-/*  /index.html  200
