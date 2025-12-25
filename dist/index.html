@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet dear Cai - Merry Christmas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Irish+Grover&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="libs/three.min.js"></script>
+</head>
+<body>
+    <!-- 背景音乐 - 圣诞音乐 (公共领域/CC0) -->
+    <audio id="bgm" loop preload="auto" muted>
+        <!-- 使用 Kevin MacLeod 的免费圣诞音乐 (CC BY 4.0) -->
+        <source src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Jingle%20Bells.mp3" type="audio/mpeg">
+        <source src="https://freepd.com/music/Jingle%20Bells.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- 音乐控制按钮 -->
+    <button class="music-btn" id="music-btn" onclick="toggleMusic()">
+        <svg id="music-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+            <line x1="1" y1="1" x2="23" y2="23" stroke-width="2"></line>
+        </svg>
+        <svg id="music-icon-on" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+    </button>
+    
+    <!-- 全屏下雪效果 -->
+    <div class="snow-container" id="snow-container"></div>
+    
+    <!-- 动态粒子层 -->
+    <div class="particle-container" id="particle-container"></div>
+    
+    <!-- 3D背景层 -->
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    
+    <div class="container">
+        <div class="hero-section" onclick="generateRandomTree()">
+            <!-- 动态生成的圣诞树 -->
+            <svg class="tree-svg" id="tree-svg" viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg">
+                <defs id="svg-defs">
+                    <!-- 发光效果滤镜 -->
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <!-- 强发光 -->
+                    <filter id="strongGlow">
+                        <feGaussianBlur stdDeviation="8" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <!-- 超强发光 - 用于装饰 -->
+                    <filter id="ultraGlow">
+                        <feGaussianBlur stdDeviation="6" result="blur"/>
+                        <feColorMatrix in="blur" type="matrix" 
+                            values="1 0 0 0 0.3
+                                    0 1 0 0 0.3
+                                    0 0 1 0 0.3
+                                    0 0 0 1 0"/>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                
+                <!-- 动态生成的树内容 -->
+                <g id="tree-content"></g>
+            </svg>
+        </div>
+        
+        <!-- 祝福文字区域 - 靠近树 -->
+        <div class="blessing-section">
+            <div class="main-message">Sweet dear Cai</div>
+            <div class="christmas-message">Merry Christmas</div>
+        </div>
+    </div>
+    
+    <script>
+        let bgScene, bgCamera, bgRenderer;
+        let mouseX = 0, mouseY = 0;
+        let treeTransitioning = false;
+        let particles = []; // 动态粒子数组
+        let floatingGeometries = []; // 浮动几何体数组
+        let isMusicPlaying = false;
+        
+        // 音乐控制
+        function toggleMusic() {
+            const bgm = document.getElementById('bgm');
+            const iconOn = document.getElementById('music-icon-on');
+            const iconOff = document.getElementById('music-icon-off');
+
+            if (isMusicPlaying) {
+                bgm.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
+            } else {
+                bgm.muted = false;
+                bgm.volume = 0.3; // 设置音量为30%
+                bgm.play().catch(e => console.log('音乐播放失败:', e));
+                iconOn.style.display = 'block';
+                iconOff.style.display = 'none';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+
+        // 自动播放背景音乐（需要用户交互后）
+        function tryAutoPlay() {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play().then(() => {
+                isMusicPlaying = true;
+                document.getElementById('music-icon-on').style.display = 'block';
+                document.getElementById('music-icon-off').style.display = 'none';
+            }).catch(e => console.log('自动播放等待用户交互:', e));
+        }
+        
+        // 配色方案 - 保持圣诞感
+        const colorSchemes = [
+            // 经典金绿红
+            {
+                name: 'classic',
+                secondary: ['#10B981', '#059669', '#047857'], // 绿色
+                accent: ['#DC2626', '#EF4444', '#B91C1C', '#FF0000'], // 红色
+                star: '#FFD700'
+            },
+            // 银蓝白
+            {
+                name: 'winter',
+                secondary: ['#3B82F6', '#60A5FA', '#2563EB'], // 蓝色
+                accent: ['#F8FAFC', '#E0F2FE', '#BFDBFE', '#FFFFFF'], // 白色
+                star: '#F8FAFC'
+            },
+            // 暖橙金
+            {
+                name: 'warm',
+                secondary: ['#10B981', '#34D399', '#6EE7B7'], // 绿色
+                accent: ['#F97316', '#FB923C', '#FDBA74', '#FFD700'], // 橙金色
+                star: '#FCD34D'
+            },
+            // 玫瑰金
+            {
+                name: 'rose',
+                secondary: ['#10B981', '#059669', '#047857'], // 绿色
+                accent: ['#F472B6', '#EC4899', '#DB2777', '#C5A059'], // 粉金色
+                star: '#FDF2F8'
+            },
+            // 深绿金红（传统）
+            {
+                name: 'traditional',
+                secondary: ['#047857', '#059669', '#10B981', '#065F46'], // 深绿
+                accent: ['#B91C1C', '#DC2626', '#EF4444', '#FFD700'], // 深红金
+                star: '#FFD700'
+            }
+        ];
+        
+        // 木色用于枝条
+        const woodColors = ['#8B4513', '#A0522D', '#6B4423', '#8B7355', '#7B5B3A', '#654321'];
+        
+        // 粒子颜色
+        const particleColors = ['#FFD700', '#C5A059', '#F5E7A3', '#FFFFFF', '#FF6B6B', '#4ECDC4'];
+        
+        // 随机选择配色
+        function getRandomScheme() {
+            return colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
+        }
+        
+        // 随机选择颜色
+        function pickColor(colorArray) {
+            return colorArray[Math.floor(Math.random() * colorArray.length)];
+        }
+        
+        // 生成木色枝条 - 水平方向±20度，不超出树的边界
+        function generateWoodBranches(centerX, topY, bottomY, topWidth, bottomWidth) {
+            const elements = [];
+            const numBranches = 8 + Math.floor(Math.random() * 6); // 8-13条枝条
+            
+            for (let i = 0; i < numBranches; i++) {
+                const t = 0.1 + (i / numBranches) * 0.75; // 从上到下分布
+                const y = topY + (bottomY - topY) * t;
+                const maxWidth = topWidth + (bottomWidth - topWidth) * t;
+                
+                // 枝条起点在中心附近
+                const startX = centerX + (Math.random() - 0.5) * 20;
+                
+                // 随机选择左或右
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                
+                // 角度在±20度内（转换为弧度）
+                const angle = (Math.random() - 0.5) * 40 * Math.PI / 180;
+                
+                // 枝条长度，不超出树的边界
+                const maxLength = maxWidth * 0.8;
+                const length = maxLength * (0.4 + Math.random() * 0.5);
+                
+                // 终点位置
+                const endX = startX + direction * length * Math.cos(angle);
+                const endY = y + length * Math.sin(angle);
+                
+                // 添加轻微的曲线
+                const controlX = (startX + endX) / 2 + (Math.random() - 0.5) * 15;
+                const controlY = (y + endY) / 2 + (Math.random() - 0.5) * 10;
+                
+                const color = pickColor(woodColors);
+                const strokeWidth = 1.5 + Math.random() * 2.5;
+                
+                elements.push(`<path d="M${startX},${y} Q${controlX},${controlY} ${endX},${endY}" 
+                    fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.85"/>`);
+            }
+            
+            return elements.join('');
+        }
+        
+        // 生成树的三角形填充层 - 底部宽度增加30%
+        function generateTreeBody(centerX, topY, bottomY, topWidth, bottomWidth, scheme) {
+            const layers = 4; // 4层树身
+            const elements = [];
+            const height = bottomY - topY;
+            
+            for (let i = 0; i < layers; i++) {
+                const layerTop = topY + (height / layers) * i;
+                const layerBottom = topY + (height / layers) * (i + 1) + 30; // 重叠
+                const layerTopWidth = topWidth + (bottomWidth - topWidth) * (i / layers);
+                const layerBottomWidth = topWidth + (bottomWidth - topWidth) * ((i + 1) / layers);
+                
+                // 生成锯齿边缘的三角形层
+                const points = generateLayerPoints(centerX, layerTop, layerBottom, layerTopWidth, layerBottomWidth);
+                const color = pickColor(scheme.secondary);
+                
+                elements.push(`<path d="${points}" fill="${color}" opacity="0.88"/>`);
+            }
+            
+            return elements.join('');
+        }
+        
+        // 生成带锯齿边缘的层点
+        function generateLayerPoints(centerX, topY, bottomY, topWidth, bottomWidth) {
+            const height = bottomY - topY;
+            const zigzags = 4 + Math.floor(Math.random() * 3); // 4-6个锯齿
+            
+            let path = `M${centerX},${topY}`; // 从顶点开始
+            
+            // 右侧边缘（带锯齿）
+            for (let i = 1; i <= zigzags; i++) {
+                const t = i / zigzags;
+                const y = topY + height * t;
+                const baseWidth = topWidth + (bottomWidth - topWidth) * t;
+                const zigzagOffset = (i % 2 === 0 ? -18 : 18) + Math.random() * 12;
+                const x = centerX + baseWidth + zigzagOffset;
+                path += ` L${x},${y}`;
+            }
+            
+            // 底部
+            path += ` L${centerX},${bottomY + 10}`;
+            
+            // 左侧边缘（带锯齿）
+            for (let i = zigzags; i >= 1; i--) {
+                const t = i / zigzags;
+                const y = topY + height * t;
+                const baseWidth = topWidth + (bottomWidth - topWidth) * t;
+                const zigzagOffset = (i % 2 === 0 ? -18 : 18) + Math.random() * 12;
+                const x = centerX - baseWidth - zigzagOffset;
+                path += ` L${x},${y}`;
+            }
+            
+            path += ' Z';
+            return path;
+        }
+        
+        // 生成装饰品 - 一半发光，一半简单（让粒子来补充动态效果）
+        function generateOrnaments(centerX, topY, bottomY, topWidth, bottomWidth, scheme) {
+            const elements = [];
+            const numOrnaments = 8 + Math.floor(Math.random() * 5); // 减少静态装饰
+            
+            for (let i = 0; i < numOrnaments; i++) {
+                const t = 0.12 + (i / numOrnaments) * 0.78;
+                const y = topY + (bottomY - topY) * t;
+                const maxWidth = topWidth + (bottomWidth - topWidth) * t;
+                const x = centerX + (Math.random() - 0.5) * maxWidth * 1.7;
+                
+                // 大小差异更大: 6-22
+                const r = 6 + Math.random() * 16;
+                const color = pickColor(scheme.accent);
+                
+                // 一半使用发光，一半简单
+                if (i % 2 === 0) {
+                    elements.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" filter="url(#ultraGlow)"/>`);
+                } else {
+                    elements.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.9"/>`);
+                }
+            }
+            
+            return elements.join('');
+        }
+        
+        // 生成小灯/金色点 - 更亮
+        function generateLights(centerX, topY, bottomY, topWidth, bottomWidth, scheme) {
+            const elements = [];
+            const numLights = 8 + Math.floor(Math.random() * 6); // 减少静态灯
+            
+            for (let i = 0; i < numLights; i++) {
+                const t = 0.08 + (i / numLights) * 0.84;
+                const y = topY + (bottomY - topY) * t;
+                const maxWidth = topWidth + (bottomWidth - topWidth) * t;
+                const x = centerX + (Math.random() - 0.5) * maxWidth * 1.9;
+                
+                // 大小差异更大: 2-10
+                const r = 2 + Math.random() * 8;
+                const color = '#FFD700'; // 统一金色小灯
+                
+                elements.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" filter="url(#glow)" opacity="${0.8 + Math.random() * 0.2}"/>`);
+            }
+            
+            return elements.join('');
+        }
+        
+        // 生成星星
+        function generateStar(centerX, y, size, color) {
+            const points = [];
+            const outerR = size;
+            const innerR = size * 0.4;
+            const numPoints = 5;
+            
+            for (let i = 0; i < numPoints * 2; i++) {
+                const angle = (i * Math.PI / numPoints) - Math.PI / 2;
+                const r = i % 2 === 0 ? outerR : innerR;
+                const x = centerX + Math.cos(angle) * r;
+                const py = y + Math.sin(angle) * r;
+                points.push(`${x},${py}`);
+            }
+            
+            return `<polygon points="${points.join(' ')}" fill="${color}" filter="url(#strongGlow)"/>`;
+        }
+        
+        // 生成树干
+        function generateTrunk(centerX, y, width, height) {
+            return `<rect x="${centerX - width/2}" y="${y}" width="${width}" height="${height}" fill="#8B4513" rx="5"/>`;
+        }
+        
+        // 创建动态粒子
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            const size = 3 + Math.random() * 8;
+            const color = pickColor(particleColors);
+            
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.backgroundColor = color;
+            particle.style.boxShadow = `0 0 ${size * 2}px ${color}`;
+            
+            // 随机初始位置
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            
+            // 存储运动参数
+            particle.dataset.vx = (Math.random() - 0.5) * 2;
+            particle.dataset.vy = (Math.random() - 0.5) * 2;
+            particle.dataset.baseX = x;
+            particle.dataset.baseY = y;
+            particle.dataset.amplitude = 20 + Math.random() * 40;
+            particle.dataset.speed = 0.5 + Math.random() * 1.5;
+            particle.dataset.phase = Math.random() * Math.PI * 2;
+            
+            return particle;
+        }
+        
+        // 初始化动态粒子
+        function initParticles() {
+            const container = document.getElementById('particle-container');
+            const numParticles = 30;
+            
+            for (let i = 0; i < numParticles; i++) {
+                const particle = createParticle();
+                container.appendChild(particle);
+                particles.push(particle);
+            }
+        }
+        
+        // 更新粒子位置
+        function updateParticles() {
+            const time = Date.now() * 0.001;
+            
+            particles.forEach((particle) => {
+                const baseX = parseFloat(particle.dataset.baseX);
+                const baseY = parseFloat(particle.dataset.baseY);
+                const amplitude = parseFloat(particle.dataset.amplitude);
+                const speed = parseFloat(particle.dataset.speed);
+                const phase = parseFloat(particle.dataset.phase);
+                
+                // 使用正弦波动实现随机漂浮效果
+                const offsetX = Math.sin(time * speed + phase) * amplitude;
+                const offsetY = Math.cos(time * speed * 0.7 + phase) * amplitude * 0.8;
+                
+                particle.style.left = (baseX + offsetX) + 'px';
+                particle.style.top = (baseY + offsetY) + 'px';
+                
+                // 添加微妙的闪烁效果
+                const opacity = 0.4 + Math.sin(time * 2 + phase) * 0.3;
+                particle.style.opacity = opacity;
+            });
+            
+            requestAnimationFrame(updateParticles);
+        }
+        
+        // 主生成函数
+        function generateRandomTree() {
+            if (treeTransitioning) return;
+            treeTransitioning = true;
+            
+            const treeContent = document.getElementById('tree-content');
+            
+            // 淡出效果
+            treeContent.style.opacity = '0';
+            
+            setTimeout(() => {
+                // 清空现有内容
+                treeContent.innerHTML = '';
+                
+                // 选择配色方案
+                const scheme = getRandomScheme();
+                
+                // 树的基本参数 - 底部宽度增加30%
+                const centerX = 300;
+                const treeTopY = 100;
+                const treeBottomY = 750;
+                const topWidth = 25;
+                const bottomWidth = 260; // 从200增加到260 (30%)
+                
+                let svgContent = '';
+                
+                // 1. 树干
+                svgContent += generateTrunk(centerX, treeBottomY - 30, 45, 85);
+                
+                // 2. 树身（绿色三角形层）
+                svgContent += generateTreeBody(centerX, treeTopY, treeBottomY, topWidth, bottomWidth, scheme);
+                
+                // 3. 木色枝条（水平±20度）
+                svgContent += generateWoodBranches(centerX, treeTopY + 30, treeBottomY - 80, topWidth, bottomWidth);
+                
+                // 4. 装饰品（部分发光）
+                svgContent += generateOrnaments(centerX, treeTopY + 50, treeBottomY - 80, topWidth, bottomWidth, scheme);
+                
+                // 5. 小灯
+                svgContent += generateLights(centerX, treeTopY + 30, treeBottomY - 50, topWidth, bottomWidth, scheme);
+                
+                // 6. 顶部星星
+                const starSize = 38 + Math.random() * 12;
+                svgContent += generateStar(centerX, treeTopY - starSize + 25, starSize, scheme.star);
+                
+                treeContent.innerHTML = svgContent;
+                
+                // 淡入效果
+                requestAnimationFrame(() => {
+                    treeContent.style.opacity = '1';
+                    treeTransitioning = false;
+                });
+            }, 400);
+        }
+        
+        // 初始化背景3D场景 - 添加动态浮动
+        function initBackground3D() {
+            const canvas = document.getElementById('bg-canvas');
+            
+            bgScene = new THREE.Scene();
+            bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            bgCamera.position.z = 15;
+            
+            bgRenderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                antialias: true, 
+                alpha: true
+            });
+            bgRenderer.setSize(window.innerWidth, window.innerHeight);
+            bgRenderer.setClearColor(0x000000, 0);
+            
+            // 创建微妙的金色线框几何体
+            const wireframeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xC5A059, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.15
+            });
+            
+            // 大型二十面体 - 左侧
+            const icosahedron1 = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(2.5),
+                wireframeMaterial.clone()
+            );
+            icosahedron1.position.set(-8, 3, -5);
+            icosahedron1.material.opacity = 0.12;
+            icosahedron1.userData = { 
+                basePos: { x: -8, y: 3, z: -5 },
+                floatAmplitude: 1.5,
+                floatSpeed: 0.3,
+                phase: Math.random() * Math.PI * 2
+            };
+            bgScene.add(icosahedron1);
+            floatingGeometries.push(icosahedron1);
+            
+            // 中型十二面体 - 右侧
+            const dodecahedron1 = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(2),
+                wireframeMaterial.clone()
+            );
+            dodecahedron1.position.set(9, -2, -6);
+            dodecahedron1.material.opacity = 0.1;
+            dodecahedron1.userData = { 
+                basePos: { x: 9, y: -2, z: -6 },
+                floatAmplitude: 1.2,
+                floatSpeed: 0.4,
+                phase: Math.random() * Math.PI * 2
+            };
+            bgScene.add(dodecahedron1);
+            floatingGeometries.push(dodecahedron1);
+            
+            // 小型八面体 - 散布
+            for (let i = 0; i < 10; i++) {
+                const size = 0.3 + Math.random() * 0.5;
+                const octahedron = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(size),
+                    wireframeMaterial.clone()
+                );
+                const posX = (Math.random() - 0.5) * 25;
+                const posY = (Math.random() - 0.5) * 15;
+                const posZ = (Math.random() - 0.5) * 10 - 5;
+                octahedron.position.set(posX, posY, posZ);
+                octahedron.material.opacity = 0.08 + Math.random() * 0.07;
+                octahedron.userData = { 
+                    basePos: { x: posX, y: posY, z: posZ },
+                    floatAmplitude: 0.5 + Math.random() * 1,
+                    floatSpeed: 0.2 + Math.random() * 0.5,
+                    phase: Math.random() * Math.PI * 2
+                };
+                bgScene.add(octahedron);
+                floatingGeometries.push(octahedron);
+            }
+            
+            animateBackground();
+            
+            // 鼠标跟踪
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            // 响应式调整
+            window.addEventListener('resize', () => {
+                bgCamera.aspect = window.innerWidth / window.innerHeight;
+                bgCamera.updateProjectionMatrix();
+                bgRenderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        function animateBackground() {
+            requestAnimationFrame(animateBackground);
+            
+            const time = Date.now() * 0.001;
+            
+            // 相机微妙跟随鼠标
+            bgCamera.position.x += (mouseX * 0.5 - bgCamera.position.x) * 0.02;
+            bgCamera.position.y += (mouseY * 0.5 - bgCamera.position.y) * 0.02;
+            bgCamera.lookAt(0, 0, 0);
+            
+            // 几何体旋转 + 浮动动画
+            floatingGeometries.forEach((geo, index) => {
+                // 旋转
+                geo.rotation.x += 0.002 + index * 0.0003;
+                geo.rotation.y += 0.003 + index * 0.0002;
+                
+                // 浮动效果
+                const userData = geo.userData;
+                if (userData && userData.basePos) {
+                    geo.position.x = userData.basePos.x + Math.sin(time * userData.floatSpeed + userData.phase) * userData.floatAmplitude;
+                    geo.position.y = userData.basePos.y + Math.cos(time * userData.floatSpeed * 0.8 + userData.phase) * userData.floatAmplitude * 0.7;
+                    geo.position.z = userData.basePos.z + Math.sin(time * userData.floatSpeed * 0.5 + userData.phase) * userData.floatAmplitude * 0.5;
+                }
+            });
+            
+            bgRenderer.render(bgScene, bgCamera);
+        }
+        
+        // 创建六角形雪花
+        function createHexagonalSnowflake(size, complexity) {
+            const snowflake = document.createElement('div');
+            snowflake.className = 'snowflake-hex';
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', size);
+            svg.setAttribute('height', size);
+            svg.setAttribute('viewBox', '0 0 100 100');
+            
+            if (complexity === 'complex') {
+                // 复杂六角形雪花
+                const hexPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                hexPath.setAttribute('d', `
+                    M50,10 L65,25 L85,25 L70,40 L75,60 L50,50 L25,60 L30,40 L15,25 L35,25 Z
+                    M50,30 L60,40 L60,55 L50,65 L40,55 L40,40 Z
+                `);
+                hexPath.setAttribute('fill', 'rgba(255,255,255,0.6)');
+                hexPath.setAttribute('stroke', 'rgba(255,255,255,0.8)');
+                hexPath.setAttribute('stroke-width', '1');
+                svg.appendChild(hexPath);
+                
+                // 内部装饰
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * 60) * Math.PI / 180;
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', '50');
+                    line.setAttribute('y1', '50');
+                    line.setAttribute('x2', 50 + Math.cos(angle) * 35);
+                    line.setAttribute('y2', 50 + Math.sin(angle) * 35);
+                    line.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+                    line.setAttribute('stroke-width', '0.5');
+                    svg.appendChild(line);
+                }
+            } else {
+                // 简单六角形
+                const hexagon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                hexagon.setAttribute('points', '50,10 85,30 85,70 50,90 15,70 15,30');
+                hexagon.setAttribute('fill', 'rgba(255,255,255,0.5)');
+                hexagon.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+                hexagon.setAttribute('stroke-width', '1');
+                svg.appendChild(hexagon);
+            }
+            
+            snowflake.appendChild(svg);
+            return snowflake;
+        }
+        
+        // 创建雪花效果
+        function createSnowflakes() {
+            const container = document.getElementById('snow-container');
+            const count = 60;
+            
+            for (let i = 0; i < count; i++) {
+                let snowflake;
+                
+                if (i % 4 === 0) {
+                    // 复杂六角形
+                    const size = 20 + Math.random() * 25;
+                    snowflake = createHexagonalSnowflake(size, 'complex');
+                } else if (i % 4 === 1) {
+                    // 简单六角形
+                    const size = 15 + Math.random() * 20;
+                    snowflake = createHexagonalSnowflake(size, 'simple');
+                } else {
+                    // 小圆点
+                    snowflake = document.createElement('div');
+                    snowflake.className = 'snowflake-dot';
+                    const size = 2 + Math.random() * 4;
+                    snowflake.style.width = size + 'px';
+                    snowflake.style.height = size + 'px';
+                }
+                
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (4 + Math.random() * 6) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.opacity = 0.3 + Math.random() * 0.5;
+                
+                container.appendChild(snowflake);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackground3D();
+            createSnowflakes();
+            initParticles();
+            updateParticles(); // 启动粒子动画
+            generateRandomTree(); // 生成初始树
+
+            // 首次用户交互时尝试自动播放音乐
+            document.addEventListener('click', function autoPlayOnFirstClick() {
+                tryAutoPlay();
+                document.removeEventListener('click', autoPlayOnFirstClick);
+            }, { once: true });
+
+            // 空格键切换树
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    generateRandomTree();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
