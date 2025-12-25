@@ -6,16 +6,17 @@
 
 # 静态资源 - 长期缓存
 /styles.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/main.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# libs 目录下的所有文件
 /libs/*
   Cache-Control: public, max-age=31536000, immutable
 
-# 图片和媒体文件
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-*.ogg
-*.mp3
-*.wav
-  Cache-Control: public, max-age=31536000, immutable
+# 所有其他静态资源
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
