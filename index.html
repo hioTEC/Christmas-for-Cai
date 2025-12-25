@@ -11,6 +11,26 @@
     <script src="libs/three.min.js"></script>
 </head>
 <body>
+    <!-- 背景音乐 - 圣诞钢琴曲 (Wikimedia Commons 公共领域) -->
+    <audio id="bgm" loop preload="auto" muted>
+        <source src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Tchaikovsky_-_The_March_of_the_Wooden_Soldiers.ogg" type="audio/ogg">
+    </audio>
+    
+    <!-- 音乐控制按钮 -->
+    <button class="music-btn" id="music-btn" onclick="toggleMusic()">
+        <svg id="music-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+            <line x1="1" y1="1" x2="23" y2="23" stroke-width="2"></line>
+        </svg>
+        <svg id="music-icon-on" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+    </button>
+    
     <!-- 全屏下雪效果 -->
     <div class="snow-container" id="snow-container"></div>
     
@@ -77,6 +97,38 @@
         let treeTransitioning = false;
         let particles = []; // 动态粒子数组
         let floatingGeometries = []; // 浮动几何体数组
+        let isMusicPlaying = false;
+        
+        // 音乐控制
+        function toggleMusic() {
+            const bgm = document.getElementById('bgm');
+            const iconOn = document.getElementById('music-icon-on');
+            const iconOff = document.getElementById('music-icon-off');
+
+            if (isMusicPlaying) {
+                bgm.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
+            } else {
+                bgm.muted = false;
+                bgm.volume = 0.3; // 设置音量为30%
+                bgm.play().catch(e => console.log('音乐播放失败:', e));
+                iconOn.style.display = 'block';
+                iconOff.style.display = 'none';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+
+        // 自动播放背景音乐（需要用户交互后）
+        function tryAutoPlay() {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play().then(() => {
+                isMusicPlaying = true;
+                document.getElementById('music-icon-on').style.display = 'block';
+                document.getElementById('music-icon-off').style.display = 'none';
+            }).catch(e => console.log('自动播放等待用户交互:', e));
+        }
         
         // 配色方案 - 保持圣诞感
         const colorSchemes = [
@@ -635,7 +687,13 @@
             initParticles();
             updateParticles(); // 启动粒子动画
             generateRandomTree(); // 生成初始树
-            
+
+            // 首次用户交互时尝试自动播放音乐
+            document.addEventListener('click', function autoPlayOnFirstClick() {
+                tryAutoPlay();
+                document.removeEventListener('click', autoPlayOnFirstClick);
+            }, { once: true });
+
             // 空格键切换树
             document.addEventListener('keydown', function(event) {
                 if (event.code === 'Space') {

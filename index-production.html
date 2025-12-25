@@ -1,0 +1,282 @@
+阿布<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet dear Cai - Merry Christmas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Irish+Grover&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-production.css">
+    <script src="libs/three.min.js"></script>
+</head>
+<body>
+    <!-- 全屏下雪效果 -->
+    <div class="snow-container" id="snow-container"></div>
+    
+    <div class="container">
+        <div class="hero-section" onclick="changeTree()">
+            <!-- 直接显示SVG，不包裹在框中 -->
+            <svg class="tree-svg" id="tree-svg" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+                <!-- 树干 -->
+                <ellipse cx="200" cy="520" rx="25" ry="40" fill="#8B4513"/>
+                
+                <!-- 真正的圣诞树层 (下方宽度增加50%，上方不变) -->
+                <g id="tree-layers">
+                    <!-- 顶层 - 保持原宽度 -->
+                    <path class="tree-layer" d="M200,120 L180,140 L190,150 L170,170 L200,160 L230,170 L210,150 L220,140 Z" fill="#10B981"/>
+                    <path class="tree-layer" d="M200,140 L185,155 L195,165 L180,180 L200,175 L220,180 L205,165 L215,155 Z" fill="#10B981"/>
+                    
+                    <!-- 第二层 - 下方宽度增加50% -->
+                    <path class="tree-layer" d="M200,200 L140,240 L170,270 L120,310 L200,300 L280,310 L230,270 L260,240 Z" fill="#10B981"/>
+                    <path class="tree-layer" d="M200,220 L155,255 L180,285 L150,320 L200,315 L250,320 L220,285 L245,255 Z" fill="#10B981"/>
+                    
+                    <!-- 第三层 - 下方宽度增加50% -->
+                    <path class="tree-layer" d="M200,300 L100,360 L150,400 L80,450 L200,440 L320,450 L250,400 L300,360 Z" fill="#10B981"/>
+                    <path class="tree-layer" d="200,320 L130,375 L175,415 L120,465 L200,460 L280,465 L225,415 L270,375 Z" fill="#10B981"/>
+                </g>
+                
+                <!-- 树杈装饰 -->
+                <g id="tree-branches">
+                    <path class="branch" d="M170,180 L140,190 L145,200 L130,210 L160,200 Z" fill="#059669"/>
+                    <path class="branch" d="M160,250 L120,265 L130,275 L110,290 L150,280 Z" fill="#059669"/>
+                    <path class="branch" d="M150,320 L110,335 L120,345 L100,360 L140,350 Z" fill="#059669"/>
+                    
+                    <path class="branch" d="M230,180 L260,190 L255,200 L270,210 L240,200 Z" fill="#059669"/>
+                    <path class="branch" d="M240,250 L280,265 L270,275 L290,290 L250,280 Z" fill="#059669"/>
+                    <path class="branch" d="M250,320 L290,335 L280,345 L300,360 L260,350 Z" fill="#059669"/>
+                </g>
+                
+                <!-- 装饰色块 -->
+                <g id="organic-ornaments">
+                    <circle class="ornament" cx="180" cy="160" r="8" fill="#E11D48"/>
+                    <circle class="ornament" cx="220" cy="190" r="8" fill="#C5A059"/>
+                    <circle class="ornament" cx="170" cy="240" r="8" fill="#E11D48"/>
+                    <circle class="ornament" cx="230" cy="270" r="8" fill="#C5A059"/>
+                    <circle class="ornament" cx="185" cy="340" r="8" fill="#E11D48"/>
+                    <circle class="ornament" cx="215" cy="380" r="8" fill="#C5A059"/>
+                </g>
+                
+                <!-- 小灯串 -->
+                <g id="light-strings">
+                    <circle class="light" cx="175" cy="150" r="3" fill="#FFD700"/>
+                    <circle class="light" cx="195" cy="165" r="3" fill="#FF6B6B"/>
+                    <circle class="light" cx="205" cy="165" r="3" fill="#4ECDC4"/>
+                    <circle class="light" cx="225" cy="150" r="3" fill="#FFD700"/>
+                    <circle class="light" cx="165" cy="230" r="3" fill="#FF6B6B"/>
+                    <circle class="light" cx="185" cy="245" r="3" fill="#4ECDC4"/>
+                    <circle class="light" cx="215" cy="245" r="3" fill="#FFD700"/>
+                    <circle class="light" cx="235" cy="230" r="3" fill="#FF6B6B"/>
+                </g>
+                
+                <!-- 星星 -->
+                <polygon class="tree-star" points="200,80 205,95 220,95 207,105 212,120 200,112 188,120 193,105 180,95 195,95" fill="#C5A059"/>
+            </svg>
+            
+            <!-- 3D线框叠加层 -->
+            <canvas id="r3f-canvas" class="r3f-overlay"></canvas>
+        </div>
+        
+        <!-- 靠近树的祝福文字 -->
+        <div class="blessing-section">
+            <div class="main-message">Sweet dear Cai</div>
+            <div class="christmas-message">Merry Christmas</div>
+        </div>
+    </div>
+    
+    <script>
+        let currentTreeType = 0;
+        let scene, camera, renderer;
+        let mouseX = 0, mouseY = 0;
+        
+        const treeConfigs = [
+            {
+                primary: '#10B981',
+                secondary: '#059669',
+                accent: '#E11D48',
+                gold: '#C5A059',
+                lights: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1']
+            },
+            {
+                primary: '#0EA5E9',
+                secondary: '#0284C7',
+                accent: '#F1F5F9',
+                gold: '#E0F2FE',
+                lights: ['#7DD3FC', '#38BDF8', '#0EA5E9', '#0284C7']
+            },
+            {
+                primary: '#F97316',
+                secondary: '#EA580C',
+                accent: '#FED7AA',
+                gold: '#FDBA74',
+                lights: ['#FED7AA', '#FDBA74', '#FB923C', '#F97316']
+            }
+        ];
+        
+        // 初始化Three.js场景
+        function initThreeJS() {
+            const canvas = document.getElementById('r3f-canvas');
+            const container = document.querySelector('.hero-section');
+            
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+            camera.position.z = 5;
+            
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                antialias: true, 
+                alpha: true,
+                transparent: true
+            });
+            renderer.setSize(canvas.width, canvas.height);
+            renderer.setClearColor(0x000000, 0);
+            
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0xC5A059, 0.8, 100);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+            
+            create3DWireframes();
+            animate();
+            
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            window.addEventListener('resize', () => {
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                camera.aspect = canvas.width / canvas.height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvas.width, canvas.height);
+            });
+        }
+        
+        function create3DWireframes() {
+            const wireframeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xC5A059, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.6 
+            });
+            
+            const dodecahedronGeometry = new THREE.DodecahedronGeometry(0.5);
+            const dodecahedron = new THREE.Mesh(dodecahedronGeometry, wireframeMaterial);
+            dodecahedron.position.set(-2, 1, -1);
+            scene.add(dodecahedron);
+            
+            const icosahedronGeometry = new THREE.IcosahedronGeometry(0.4);
+            const icosahedron = new THREE.Mesh(icosahedronGeometry, wireframeMaterial);
+            icosahedron.position.set(2, -0.5, -1);
+            scene.add(icosahedron);
+            
+            const octahedronGeometry = new THREE.OctahedronGeometry(0.3);
+            const octahedron = new THREE.Mesh(octahedronGeometry, wireframeMaterial);
+            octahedron.position.set(-1, -1.5, 0);
+            scene.add(octahedron);
+            
+            for (let i = 0; i < 6; i++) {
+                const starGeometry = new THREE.OctahedronGeometry(0.1 + Math.random() * 0.1);
+                const star = new THREE.Mesh(starGeometry, wireframeMaterial);
+                star.position.set(
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 6,
+                    (Math.random() - 0.5) * 4
+                );
+                scene.add(star);
+            }
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (camera) {
+                camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.05;
+                camera.position.y += (mouseY * 0.05 - camera.position.y) * 0.05;
+                camera.lookAt(0, 0, 0);
+            }
+            
+            scene.children.forEach(child => {
+                if (child.geometry && child.material && child.material.wireframe) {
+                    child.rotation.x += 0.005;
+                    child.rotation.y += 0.01;
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        function changeTree() {
+            currentTreeType = (currentTreeType + 1) % treeConfigs.length;
+            updateTree();
+        }
+        
+        function updateTree() {
+            const config = treeConfigs[currentTreeType];
+            const svg = document.getElementById('tree-svg');
+            
+            const treeLayers = svg.querySelectorAll('.tree-layer');
+            treeLayers.forEach(layer => {
+                layer.setAttribute('fill', config.primary);
+            });
+            
+            const branches = svg.querySelectorAll('.branch');
+            branches.forEach(branch => {
+                branch.setAttribute('fill', config.secondary);
+            });
+            
+            const ornaments = svg.querySelectorAll('.ornament');
+            ornaments.forEach((ornament, index) => {
+                const color = index % 2 === 0 ? config.accent : config.gold;
+                ornament.setAttribute('fill', color);
+            });
+            
+            const lights = svg.querySelectorAll('.light');
+            lights.forEach((light, index) => {
+                const colorIndex = index % config.lights.length;
+                light.setAttribute('fill', config.lights[colorIndex]);
+            });
+            
+            const treeStar = svg.querySelector('.tree-star');
+            if (treeStar) {
+                treeStar.setAttribute('fill', config.gold);
+            }
+        }
+        
+        // 全屏下雪效果
+        function createSnowflakes() {
+            const snowContainer = document.getElementById('snow-container');
+            const snowflakeCount = 100;
+            
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.animationDelay = Math.random() * 2 + 's';
+                snowflake.style.opacity = Math.random() * 0.8 + 0.2;
+                snowContainer.appendChild(snowflake);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initThreeJS();
+            createSnowflakes();
+            
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    changeTree();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

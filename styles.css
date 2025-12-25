@@ -6,6 +6,36 @@
     box-sizing: border-box;
 }
 
+/* 音乐控制按钮 */
+.music-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(197, 160, 89, 0.2);
+    border: 2px solid rgba(197, 160, 89, 0.5);
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.music-btn:hover {
+    background: rgba(197, 160, 89, 0.4);
+    transform: scale(1.1);
+}
+
+.music-btn svg {
+    width: 24px;
+    height: 24px;
+    color: #C5A059;
+}
+
 /* Irish Grover 字体 */
 body {
     font-family: 'Irish Grover', cursive;
