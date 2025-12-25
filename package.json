@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Christmas greeting page for Cai",
   "scripts": {
-    "build": "echo 'Static site - no build required'"
+    "build": "echo 'Static site - no build required'",
+    "deploy": "wrangler pages deploy . --project-name=christmas-for-cai"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.54.0"
   }
 }
