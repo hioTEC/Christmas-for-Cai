@@ -4,7 +4,7 @@
   "description": "Christmas greeting page for Cai",
   "scripts": {
     "build": "echo 'Static site - no build required'",
-    "deploy": "wrangler pages deploy . --project-name=christmas-for-cai"
+    "deploy": "wrangler pages deploy . --project-name=christmas-2025"
   },
   "engines": {
     "node": ">=18.0.0"
