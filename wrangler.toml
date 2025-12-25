@@ -3,3 +3,4 @@ compatibility_date = "2025-12-25"
 
 # Cloudflare Pages 静态资源配置
 pages_build_output_dir = "./dist"
+
